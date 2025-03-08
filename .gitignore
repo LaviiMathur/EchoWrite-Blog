@@ -1,19 +1,29 @@
-# Node.js (Backend)
+# Ignore node_modules in both frontend and backend
 node_modules/
-.env
-dist/
-coverage/
 
-# Vite (Frontend)
+# Ignore environment variables
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# Ignore build/output folders
 .vite/
 dist/
-.cache/
+build/
 
-# OS-specific
-.DS_Store
-Thumbs.db
-
-# Logs
+# Ignore log files
 npm-debug.log*
 yarn-debug.log*
-pnpm-debug.log*
+yarn-error.log*
+
+# Ignore dependency lock files (optional, if you want consistency, keep package-lock.json)
+pnpm-lock.yaml
+yarn.lock
+
+# Ignore editor/system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
