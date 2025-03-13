@@ -47,12 +47,6 @@ const sendOtpEmail = async (email, otp) => {
   }
 };
 
-// Check if username exists
-const checkUsernameExists = async (username) => {
-  const user = await db("users").where({ username }).first();
-  return !!user; // Return true if user exists, false otherwise
-};
-
 // Signup
 export const signup = async (req, res) => {
   const { name, username, email, password } = req.body;
@@ -95,24 +89,6 @@ export const signup = async (req, res) => {
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ message: "Signup failed" });
-  }
-};
-
-// Check Username Availability
-export const checkUsername = async (req, res) => {
-  const { username } = req.body;
-  if (!username)
-    return res.status(400).json({ message: "Username is required" });
-
-  try {
-    const exists = await checkUsernameExists(username);
-    if (exists) {
-      return res.status(409).json({ message: "Username already taken" });
-    }
-    return res.status(200).json({ message: "Username is available" });
-  } catch (error) {
-    console.error("Username check error:", error);
-    res.status(500).json({ message: "Error checking username availability" });
   }
 };
 
@@ -272,37 +248,42 @@ export const googleLogin = async (req, res) => {
 
     let user = await db("users").where({ email }).first();
 
-    if (!user) {
-      let username = email.split("@")[0].replace(/[^a-zA-Z0-9_\.]/g, "");
-
-      // If username is too short, use a modified version of the name
-      if (username.length < 3) {
-        username = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
-      }
-
-      // Add a random suffix to reduce chance of collisions
-      const randomSuffix = Math.floor(Math.random() * 1000);
-      username = `${username}_${randomSuffix}`;
-
-      const insertedUsers = await db("users")
-        .insert({
-          name,
-          email,
-          username,
-          avatar:
-            picture ||
-            "https://res.cloudinary.com/dpfmmqggy/image/upload/v1740409752/Profile.png",
-          verified: true,
-          following_count: 0,
-          followers_count: 0,
-        })
-        .returning(["id", "name", "username", "avatar"]);
-
-      user = insertedUsers[0];
+    if (user) {
+      // User exists, just log them in
+      const token = generateToken(user);
+      return res.json({ message: "Login successful", token, user });
     }
 
+    // Create new user if no existing account is found
+    let username = email.split("@")[0].replace(/[^a-zA-Z0-9_\.]/g, "");
+
+    // If username is too short, modify it
+    if (username.length < 3) {
+      username = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
+    }
+
+    // Add random suffix to reduce collision
+    const randomSuffix = Math.floor(Math.random() * 1000);
+    username = `${username}_${randomSuffix}`;
+
+    const insertedUsers = await db("users")
+      .insert({
+        name,
+        email,
+        username,
+        avatar:
+          picture ||
+          "https://res.cloudinary.com/dpfmmqggy/image/upload/v1740409752/Profile.png",
+        verified: true,
+        following_count: 0,
+        followers_count: 0,
+      })
+      .returning(["id", "name", "username", "avatar"]);
+
+    user = insertedUsers[0];
+
     const token = generateToken(user);
-    res.json({ message: "Login successful", token, user });
+    res.json({ message: "Signup & login successful", token, user });
   } catch (error) {
     console.error("Google login error:", error);
     res.status(500).json({ message: "Login failed" });

@@ -112,7 +112,9 @@ function Verify() {
             {errors.otp && (
               <p className="text-red-500 text-sm">{errors.otp.message}</p>
             )}
-
+            <p className="text-purple-400 text-sm">
+              Please check junk or spam if you did not receive the OTP.
+            </p>
             {/* Verify Button */}
             <Button
               type="submit"

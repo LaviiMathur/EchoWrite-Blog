@@ -18,11 +18,12 @@ function Signup() {
   // Redirect if user is already logged in
   const { status } = useSelector((state) => state.auth);
   useEffect(() => {
-    if (status && !loading) {
-      toastPresets.warning("You are already Signed up");
+    if (status  && !loading) {  
+      toastPresets.warning("You are already logged in");
       navigate("/");
     }
-  }, [status, navigate]);
+  }, [  loading]);
+  
 
   // Handle Submit
   const onSubmit = async (data) => {
