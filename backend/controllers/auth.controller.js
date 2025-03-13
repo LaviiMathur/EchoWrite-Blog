@@ -60,7 +60,7 @@ export const signup = async (req, res) => {
       return res.status(409).json({ message: "User already registered" });
 
     // Check if username already exists
-    const usernameExists = await checkUsernameExists(username);
+    const usernameExists = await db("users").where({ username }).first();
     if (usernameExists)
       return res.status(409).json({
         message: "Username already taken. Please choose another username.",
