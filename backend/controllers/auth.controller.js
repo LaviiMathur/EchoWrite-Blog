@@ -7,7 +7,6 @@ import admin from "../conf/firebase.js";
 import redis from "../conf/redis.js";
 import { createMailOptions, otpEmailTemplate } from "../conf/mail.conf.js";
 import db from "../conf/database.js";
-import slugify from "slugify";
 
 dotenv.config();
 
@@ -164,7 +163,7 @@ export const verifyOtp = async (req, res) => {
         avatar:
           "https://res.cloudinary.com/dpfmmqggy/image/upload/v1740409752/Profile.png",
       })
-      .returning(["id", "name", "username", "avatar"]); 
+      .returning(["id", "name", "username", "avatar"]);
 
     const newUser = insertedUsers[0];
 
@@ -261,6 +260,7 @@ export const login = async (req, res) => {
 };
 
 // Google Login
+
 export const googleLogin = async (req, res) => {
   const { idToken } = req.body;
   if (!idToken)
@@ -273,20 +273,32 @@ export const googleLogin = async (req, res) => {
     let user = await db("users").where({ email }).first();
 
     if (!user) {
-      // For Google login, we still need to generate a unique username
-      const username = await generateUniqueUsername(name);
+      let username = email.split("@")[0].replace(/[^a-zA-Z0-9_\.]/g, "");
 
-      [user] = await db("users")
+      // If username is too short, use a modified version of the name
+      if (username.length < 3) {
+        username = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
+      }
+
+      // Add a random suffix to reduce chance of collisions
+      const randomSuffix = Math.floor(Math.random() * 1000);
+      username = `${username}_${randomSuffix}`;
+
+      const insertedUsers = await db("users")
         .insert({
           name,
           email,
           username,
-          avatar: picture,
+          avatar:
+            picture ||
+            "https://res.cloudinary.com/dpfmmqggy/image/upload/v1740409752/Profile.png",
           verified: true,
           following_count: 0,
           followers_count: 0,
         })
         .returning(["id", "name", "username", "avatar"]);
+
+      user = insertedUsers[0];
     }
 
     const token = generateToken(user);
