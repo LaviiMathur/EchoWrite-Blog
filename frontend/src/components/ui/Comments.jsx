@@ -8,9 +8,8 @@ import { MdDeleteForever } from "react-icons/md";
 function Comments({ comments, blog_id }) {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(false);
-  const { userData } = useSelector((state) => state.auth);
+  const { status, userData } = useSelector((state) => state.auth);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,9 +67,7 @@ function Comments({ comments, blog_id }) {
     }
   };
 
-  const handleModalClose = () => {
-    
-  };
+  const handleModalClose = () => {};
 
   // Function to format date
   const formatDate = (dateString) => {
@@ -97,36 +94,37 @@ function Comments({ comments, blog_id }) {
         Comments ({comments?.length || 0})
       </h2>
 
-      {/* Add comment form */}
-      <div className="mb-8 border-b pb-6">
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="flex items-start mb-3">
-            {userData.user.avatar && (
-              <img
-                src={userData.user.avatar}
-                alt={userData.user.name}
-                className="w-10 h-10 rounded-full mr-3"
-              />
-            )}
-            <textarea
-              rows="3"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6855E0]"
-              placeholder="Add a comment..."
-              required
-            ></textarea>
-          </div>
+      {status && (
+        <div className="mb-8 border-b pb-6">
+          <form onSubmit={handleSubmit} className="flex flex-col">
+            <div className="flex items-start mb-3">
+              {userData.user.avatar && (
+                <img
+                  src={userData.user.avatar}
+                  alt={userData.user.name}
+                  className="w-10 h-10 rounded-full mr-3"
+                />
+              )}
+              <textarea
+                rows="3"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6855E0]"
+                placeholder="Add a comment..."
+                required
+              ></textarea>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="self-end bg-[#7260ea] hover:bg-[#6855E0] cursor-pointer text-white font-medium shadow-lg py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 flex items-center"
-          >
-            {loading ? "Posting..." : "Post Comment"}
-          </button>
-        </form>
-      </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="self-end bg-[#7260ea] hover:bg-[#6855E0] cursor-pointer text-white font-medium shadow-lg py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 flex items-center"
+            >
+              {loading ? "Posting..." : "Post Comment"}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Comments list */}
       {comments?.length > 0 ? (
@@ -169,9 +167,7 @@ function Comments({ comments, blog_id }) {
                 <ConfirmationModal
                   isOpen={isModalOpen}
                   onClose={handleModalClose}
-                  onConfirm={() =>
-                    handleDelete(comment.id, blog_id)
-                  }
+                  onConfirm={() => handleDelete(comment.id, blog_id)}
                   message="Do you really want to delete this comment?"
                 />
               )}
