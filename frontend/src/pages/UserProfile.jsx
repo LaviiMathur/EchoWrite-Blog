@@ -8,9 +8,8 @@ import {
   LuUserPlus,
   LuMapPin,
   LuLink,
-  LuPencil,
 } from "react-icons/lu";
-
+import { LiaUserEditSolid } from "react-icons/lia";
 import {
   Error,
   Header,
@@ -94,22 +93,23 @@ function UserProfile() {
             </div>
 
             {/* User Info */}
-            <div className="md:flex-grow  w-4/6">
+            <div className="md:flex-grow pl-4 w-4/6">
               <div className="flex items-center  space-x-4">
                 <h1 className="text-3xl font-bold text-gray-900">
                   {profile.name}
                 </h1>
+
                 {isOwner ? (
                   <Link
                     to={`/profile/${username}/update-profile`}
                     state={{ profile }}
-                    className="bg-[#6855E0]/90 text-white px-6 py-2 rounded-full hover:bg-[#6855E0] flex items-center"
+                    className="border border-gray-50 bg-[#8573E6] shadow-md p-2 rounded-lg flex items-center justify-center hover:bg-[#6855E0] transition-colors"
                   >
-                    <LuPencil className="mr-2 w-5 h-5" /> Edit
+                    <LiaUserEditSolid className="text-2xl text-gray-50" />
                   </Link>
                 ) : (
-                  <button className="bg-[#6855E0]/90 text-white px-6 py-2 rounded-full hover:bg-[#6855E0] flex items-center">
-                    <LuUserPlus className="mr-2 w-5 h-5" /> Follow
+                  <button className="border border-gray-50 bg-[#8573E6] shadow-md p-2 rounded-lg flex items-center justify-center hover:bg-[#6855E0] transition-colors">
+                    <LuUserPlus className="text-2xl text-gray-50" />
                   </button>
                 )}
               </div>

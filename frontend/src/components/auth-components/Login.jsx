@@ -20,10 +20,10 @@ function LogIn() {
   
   useEffect(() => {
     if (status && !loading) {
-      toastPresets.info("You are already loged in");
+  
       navigate("/");
     }
-  }, [status, navigate]);
+  }, [status, navigate,loading]);
   const onSubmit = async (data) => {
     setLoading(true);
     try {

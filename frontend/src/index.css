@@ -62,14 +62,26 @@
   list-style-type: lower-roman !important; /* i, ii, iii... */
 }
 
-
-
-
-/* For Firefox */
 * {
   scrollbar-width: thin;
-
-  scrollbar-color: #FAE88E #51517a9a  ;
-
+  scrollbar-color: #fae88e #F0F0FA;
 }
 
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+th {
+  background-color: #f2f2f2;
+  text-align: left;
+}
+pre {
+  font-family: "Courier New", monospace;
+}

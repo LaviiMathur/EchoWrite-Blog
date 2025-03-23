@@ -7,6 +7,7 @@ import admin from "../conf/firebase.js";
 import redis from "../conf/redis.js";
 import { createMailOptions, otpEmailTemplate } from "../conf/mail.conf.js";
 import db from "../conf/database.js";
+import slugify from "slugify";
 
 dotenv.config();
 
@@ -47,9 +48,26 @@ const sendOtpEmail = async (email, otp) => {
   }
 };
 
+// Check if username exists
+const checkUsernameExists = async (username, excludeUserId = null) => {
+  const query = db("users").where({ username });
+  
+  // If excludeUserId is provided, exclude that user from the check
+  // (useful for updates where user can keep their existing username)
+  if (excludeUserId) {
+    query.whereNot({ id: excludeUserId });
+  }
+  
+  const user = await query.first();
+  return !!user; // Return true if user exists, false otherwise
+};
+
 // Signup
 export const signup = async (req, res) => {
-  const { name, username, email, password } = req.body;
+  const { name, username, password } = req.body;
+  let { email } = req.body;
+  email = email.toLowerCase();
+  
   if (!email || !password || !username || !name)
     return res.status(400).json({ message: "All fields are required" });
 
@@ -60,7 +78,7 @@ export const signup = async (req, res) => {
       return res.status(409).json({ message: "User already registered" });
 
     // Check if username already exists
-    const usernameExists = await db("users").where({ username }).first();
+    const usernameExists = await checkUsernameExists(username);
     if (usernameExists)
       return res.status(409).json({
         message: "Username already taken. Please choose another username.",
@@ -92,10 +110,30 @@ export const signup = async (req, res) => {
   }
 };
 
+// Check Username Availability
+export const checkUsername = async (req, res) => {
+  const { username } = req.body;
+  if (!username)
+    return res.status(400).json({ message: "Username is required" });
+
+  try {
+    const exists = await checkUsernameExists(username);
+    if (exists) {
+      return res.status(409).json({ message: "Username already taken" });
+    }
+    return res.status(200).json({ message: "Username is available" });
+  } catch (error) {
+    console.error("Username check error:", error);
+    res.status(500).json({ message: "Error checking username availability" });
+  }
+};
+
 // OTP Verification
 export const verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { otp } = req.body;
+    let { email } = req.body;
+    email = email.toLowerCase();
     if (!email || !otp)
       return res.status(400).json({ message: "OTP and email are required" });
 
@@ -112,7 +150,7 @@ export const verifyOtp = async (req, res) => {
         .status(400)
         .json({ message: "Session expired. Please signup again." });
 
-    const tempUser = tempUserJson;
+    const tempUser = JSON.parse(tempUserJson);
 
     // Double-check username is still unique before final registration
     const usernameExists = await checkUsernameExists(tempUser.username);
@@ -157,7 +195,8 @@ export const verifyOtp = async (req, res) => {
 
 // OTP Resend
 export const resendOtp = async (req, res) => {
-  const { email } = req.body;
+  let { email } = req.body;
+  email = email.toLowerCase();
   if (!email) return res.status(400).json({ message: "Email is required" });
 
   try {
@@ -199,7 +238,9 @@ export const resendOtp = async (req, res) => {
 
 // Login
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  let { email } = req.body;
+  email = email.toLowerCase();
 
   if (!email || !password)
     return res.status(400).json({ message: "Email and password are required" });
@@ -222,6 +263,7 @@ export const login = async (req, res) => {
       username: userdata?.username || "",
       avatar: userdata?.avatar || "",
       id: userdata?.id || "",
+      email: userdata?.email || "",
     };
     const token = generateToken(user);
     res.json({
@@ -236,7 +278,6 @@ export const login = async (req, res) => {
 };
 
 // Google Login
-
 export const googleLogin = async (req, res) => {
   const { idToken } = req.body;
   if (!idToken)
@@ -248,42 +289,45 @@ export const googleLogin = async (req, res) => {
 
     let user = await db("users").where({ email }).first();
 
-    if (user) {
-      // User exists, just log them in
-      const token = generateToken(user);
-      return res.json({ message: "Login successful", token, user });
+    if (!user) {
+      // Generate a unique username for this Google user
+      const generateUniqueUsername = async (baseName) => {
+        const baseUsername = slugify(baseName, { lower: true, strict: true });
+        
+        // Check if username exists
+        const exists = await checkUsernameExists(baseUsername);
+        if (!exists) return baseUsername;
+        
+        // If username exists, append a random number
+        let uniqueUsername;
+        let attemptCount = 0;
+        
+        do {
+          const randomSuffix = Math.floor(Math.random() * 10000);
+          uniqueUsername = `${baseUsername}${randomSuffix}`;
+          attemptCount++;
+        } while (await checkUsernameExists(uniqueUsername) && attemptCount < 10);
+        
+        return uniqueUsername;
+      };
+
+      const username = await generateUniqueUsername(name);
+
+      [user] = await db("users")
+        .insert({
+          name,
+          email,
+          username,
+          avatar: picture,
+          verified: true,
+          following_count: 0,
+          followers_count: 0,
+        })
+        .returning(["id", "name", "username", "avatar"]);
     }
-
-    // Create new user if no existing account is found
-    let username = email.split("@")[0].replace(/[^a-zA-Z0-9_\.]/g, "");
-
-    // If username is too short, modify it
-    if (username.length < 3) {
-      username = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
-    }
-
-    // Add random suffix to reduce collision
-    const randomSuffix = Math.floor(Math.random() * 1000);
-    username = `${username}_${randomSuffix}`;
-
-    const insertedUsers = await db("users")
-      .insert({
-        name,
-        email,
-        username,
-        avatar:
-          picture ||
-          "https://res.cloudinary.com/dpfmmqggy/image/upload/v1740409752/Profile.png",
-        verified: true,
-        following_count: 0,
-        followers_count: 0,
-      })
-      .returning(["id", "name", "username", "avatar"]);
-
-    user = insertedUsers[0];
 
     const token = generateToken(user);
-    res.json({ message: "Signup & login successful", token, user });
+    res.json({ message: "Login successful", token, user });
   } catch (error) {
     console.error("Google login error:", error);
     res.status(500).json({ message: "Login failed" });
@@ -305,11 +349,7 @@ export const updateUser = async (req, res) => {
 
     // Handle username update - reject if not unique
     if (username && username !== user.username) {
-      const usernameExists = await db("users")
-        .where({ username })
-        .whereNot({ id: user_id })
-        .first();
-
+      const usernameExists = await checkUsernameExists(username, user_id);
       if (usernameExists) {
         return res.status(409).json({
           message: "Username already taken. Please choose another username.",

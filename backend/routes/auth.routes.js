@@ -4,7 +4,6 @@ import {
   login,
   resendOtp,
   signup,
-  updateUser,
   verifyOtp,
 } from "../controllers/auth.controller.js";
 

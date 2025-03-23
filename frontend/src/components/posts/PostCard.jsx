@@ -99,7 +99,7 @@ function PostCard({ data }) {
               initialSaved={data.userSaved}
               isLogedin={status}
             />
-            <Share postUrl={`/posts/${data.slug}`} postTitle={data.title}  className="flex items-center" />
+            <Share postUrl={`/posts/${data.slug}`} postTitle={data.title}  className="-bottom-6 right-0" />
           </div>
         </div>
       </div>

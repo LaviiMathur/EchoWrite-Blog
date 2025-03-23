@@ -5,6 +5,7 @@ import {
   Loading,
   ImageUpload,
   Select,
+  ConfirmationModal,
 } from "../components/index.components";
 
 import { useForm } from "react-hook-form";
@@ -20,6 +21,8 @@ function UpdateProfile() {
   const { status } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -41,7 +44,11 @@ function UpdateProfile() {
   }, [navigate, status]);
 
   const handleImageUpload = (data) => setValue("avatar", data.avatar);
-  const handleImageRemove = () => setValue("avatar", "https://cloud.appwrite.io/v1/storage/buckets/67c5d88a001fafdc813d/files/67c72085000fee052488/view?project=67c5d4a400153ab3eeef&mode=admin");
+  const handleImageRemove = () =>
+    setValue(
+      "avatar",
+      "https://cloud.appwrite.io/v1/storage/buckets/67c5d88a001fafdc813d/files/67c72085000fee052488/view?project=67c5d4a400153ab3eeef&mode=admin"
+    );
 
   const onSubmit = async (data) => {
     try {
@@ -177,7 +184,7 @@ function UpdateProfile() {
               </div>
 
               {/* Confirm Password */}
-              <div className="row-start-2"> 
+              <div className="row-start-2">
                 <Input
                   {...register("confirmPassword", {
                     required: "Please confirm your password",
@@ -215,14 +222,21 @@ function UpdateProfile() {
             </Button>
 
             <Button
-              type="submit"
+              // type="submit"
               bgColor="#6855E0"
               textColor="white"
               className="py-2 px-8"
+              onClick={()=>{setIsModalOpen(true)}}
               disabled={changePass === "Yes" && !passwordsMatch}
             >
               Save Changes
             </Button>
+            <ConfirmationModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              onConfirm={handleSubmit(onSubmit)} 
+              message="Are you sure you want to save these changes?"
+            />
           </div>
         </form>
       </div>

@@ -10,6 +10,7 @@ import Comments from "./ui/Comments";
 import Error from "./ui/Error";
 import ImageUpload from "./ui/ImageUpload";
 import Share from "./ui/Share";
+import ConfirmationModal from "./ui/ConfermationModal";
 
 import Signup from "./auth-components/Signup";
 import Login from "./auth-components/Login";
@@ -21,6 +22,7 @@ import Header from "./header/Header";
 import Post from "./posts/Post";
 import PostCard from "./posts/PostCard";
 import PostForm from "./posts/PostForm";
+import PostActions from "./posts/PostActions";
 
 import About from "./about/About";
 
@@ -36,6 +38,7 @@ export {
   Bookmark,
   Comments,
   Share,
+  ConfirmationModal,
   Signup,
   Login,
   Verify,
@@ -44,6 +47,7 @@ export {
   Post,
   PostCard,
   PostForm,
+  PostActions,
   About,
   Select,
 };

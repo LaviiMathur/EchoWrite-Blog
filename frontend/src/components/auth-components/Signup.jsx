@@ -18,12 +18,10 @@ function Signup() {
   // Redirect if user is already logged in
   const { status } = useSelector((state) => state.auth);
   useEffect(() => {
-    if (status  && !loading) {  
-      toastPresets.warning("You are already logged in");
+    if (status && !loading && !initialCheck) {
       navigate("/");
     }
-  }, [  loading]);
-  
+  }, [status, navigate]);
 
   // Handle Submit
   const onSubmit = async (data) => {
@@ -32,6 +30,7 @@ function Signup() {
       const API_URL = import.meta.env.VITE_API_BASE_URL;
 
       // Send the signup data to the backend
+      console.log(`${API_URL}/auth/signup`);
       const response = await axios.post(`${API_URL}/auth/signup`, data);
 
       // If signup is successful, store the email for OTP verification

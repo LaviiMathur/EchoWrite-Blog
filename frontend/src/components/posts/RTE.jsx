@@ -29,10 +29,12 @@ function RTE({ value = "", onChange }) {
           "wordcount",
         ],
         toolbar:
-          "undo redo | blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | image | removeformat | help",
-        content_style:
-          "body { font-family:Helvetica,Arial,sans-serif; font-size:14px; direction: ltr; }",
+          "undo redo |  fontsizeinput  blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | image | removeformat | help",
+        fontsize_formats: "8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt",
 
+        content_style: `
+       
+      `,
         paste_data_images: false,
       }}
     />

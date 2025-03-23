@@ -18,20 +18,29 @@ function PostForm({ post: existingPost }) {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors }
+    formState: { errors },
   } = useForm({
     defaultValues: {
       title: existingPost?.title || "",
       content: existingPost?.content || "",
-      isPublic: existingPost?.isPublic ? "Public" : "Private" || "Public",
+      is_public:
+        existingPost?.is_public !== undefined
+          ? existingPost.is_public
+            ? "Public"
+            : "Private"
+          : "Public",
       image_url: existingPost?.image_url || "",
-      user_id: userData?.id
-    }
+      user_id: userData?.user.id,
+    },
   });
 
-  // Watch for form values
   const content = watch("content");
-
+  useEffect(() => {
+    if (existingPost) {
+      setValue("is_public", existingPost.is_public ? "Public" : "Private");
+    }
+  }, [existingPost, setValue]);
+ 
   useEffect(() => {
     if (!status) {
       toastPresets.info("Not Authorized");
@@ -46,7 +55,6 @@ function PostForm({ post: existingPost }) {
 
   // Handle image upload from ImageUpload component
   const handleImageUpload = (data) => {
-    // Based on your ImageUpload component, it returns an object with avatar property
     setValue("image_url", data.avatar);
   };
 
@@ -59,6 +67,7 @@ function PostForm({ post: existingPost }) {
     if (data.content.trim() === "") {
       return toastPresets.error("Content can't be empty.");
     }
+    
 
     if (data.title.trim() === "") {
       return toastPresets.error("Title can't be empty.");
@@ -68,26 +77,35 @@ function PostForm({ post: existingPost }) {
       setLoading(true);
       const token = userData.token;
       const API_URL = import.meta.env.VITE_API_BASE_URL;
-      
-      // Convert isPublic from select value to boolean
+
+      // Convert is_public from select value to boolean
       const formData = {
         ...data,
-        isPublic: data.isPublic === "Public",
-        // Ensure image_url is empty string if not provided
-        image_url: data.image_url || ""
+        is_public : data.is_public === "Public" ? true : false,
+        image_url: data.image_url || "",
       };
-
-      await axios.post(`${API_URL}/posts/create-post`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (existingPost) {
+        // Send PUT request to update post
+        await axios.put(`${API_URL}/posts/${existingPost.slug}`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        toastPresets.success("Post updated successfully!");
+      } else {
+        // Send POST request to create a new post
+        await axios.post(`${API_URL}/posts/create-post`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        toastPresets.success("Post created successfully!");
+      }
 
       navigate("/");
-      toastPresets.success("Post created successfully!");
     } catch (error) {
-      console.error("Error creating post:", error);
-      return toastPresets.error("Post creation failed.");
+      console.error("Error submitting post:", error);
+      toastPresets.error("Failed to submit post.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +114,10 @@ function PostForm({ post: existingPost }) {
   return loading ? (
     <Loading />
   ) : (
-    <form className="flex flex-col gap-6 w-full" onSubmit={handleSubmit(onSubmit)}>
+    <form
+      className="flex flex-col gap-6 w-full"
+      onSubmit={handleSubmit(onSubmit)}
+    >
       {/* Image Upload */}
       <ImageUpload
         initialImageUrl={watch("image_url") || ""}
@@ -136,7 +157,8 @@ function PostForm({ post: existingPost }) {
         <div className="flex flex-col max-w-fit max-h-fit">
           <label className="text-lg font-medium">Status</label>
           <select
-            {...register("isPublic")}
+            {...register("is_public")}
+            
             className="px-4 py-2 border-2 border-[#6855E0] rounded-lg focus:outline-0 focus:ring-2 focus:ring-[#6855E0]"
           >
             <option value="Public">Public</option>

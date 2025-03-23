@@ -7,7 +7,8 @@ import {
   getPublicPosts,
   toggleLike,
   toggleBookmark,
-
+  addComments,
+  deleteComments,
 } from "../controllers/blog.controller.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
@@ -18,7 +19,7 @@ postRoute.post("/create-post", authMiddleware, createPost);
 //updatepost Route
 postRoute.put("/:slug", authMiddleware, updatePost);
 //deletepost Route
-postRoute.delete("/:slug", authMiddleware, deletePost);
+postRoute.delete("/delete-post", authMiddleware, deletePost);
 //getposts public Route
 postRoute.get("/all-posts", getPublicPosts);
 //getpost Route
@@ -26,7 +27,10 @@ postRoute.get("/:slug", getPost);
 //toggle likes
 postRoute.post("/like", toggleLike);
 //toggle bookmark
-postRoute.post("/toggleBookmark",authMiddleware, toggleBookmark);
-
+postRoute.post("/toggleBookmark", authMiddleware, toggleBookmark);
+//add comments
+postRoute.post("/add-comment", authMiddleware, addComments);
+//add comments
+postRoute.delete("/delete-comment", authMiddleware, deleteComments);
 
 export default postRoute;

@@ -12,6 +12,7 @@
   "dependencies": {
     "@fontsource/maple-mono": "^5.0.1",
     "@fontsource/montserrat": "^5.1.1",
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@reduxjs/toolkit": "^2.6.0",
     "@tailwindcss/vite": "^4.0.7",
     "@tinymce/tinymce-react": "^6.0.0",

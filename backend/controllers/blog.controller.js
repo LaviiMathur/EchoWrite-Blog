@@ -83,21 +83,35 @@ export const updatePost = async (req, res) => {
 // Delete Post
 export const deletePost = async (req, res) => {
   try {
-    const { slug } = req.params;
-    const user_id = req.user.id;
+    const { postId, user_id } = req.body;
+    // console.log("postid:", postId, "userid", user_id);
 
-    const blog = await db("blog").where({ slug }).first();
-    if (!blog) return res.status(404).json({ message: "Blog not found" });
-    if (blog.user_id !== user_id)
-      return res.status(403).json({ message: "Unauthorized" });
+    if (!postId || !user_id) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-    await db("blog").where({ slug }).del();
-    res.status(200).json({ message: "Blog deleted successfully" });
+    // Check if the blog exists
+    const blog = await db("blog").where({ id: postId }).first();
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+    // Check ownership
+    if (blog.user_id !== user_id) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: You are not the owner of this post" });
+    }
+
+    // Delete the blog post
+    await db("blog").where({ id: postId }).del();
+
+    return res.status(200).json({ message: "Blog deleted successfully" });
   } catch (error) {
-    console.error("Blog deletion error: ", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Blog deletion error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 // Helper functions for counts
 const getCounts = async (tableName, blogIds) => {
   if (!blogIds || !blogIds.length) return {};
@@ -225,6 +239,80 @@ export const toggleBookmark = async (req, res) => {
   }
 };
 
+// Add comments
+export const addComments = async (req, res) => {
+  try {
+    const { blog_id, content, user_id } = req.body;
+
+    if (!blog_id || !content || !user_id) {
+      return res.status(400).json({
+        error: true,
+        message: "Missing required fields",
+      });
+    }
+
+    const [newComment] = await db("comments")
+      .insert({ content, blog_id, user_id })
+      .returning("*");
+
+    return res.status(201).json({
+      success: true,
+      message: "Comment added successfully",
+      comment: newComment,
+    });
+  } catch (error) {
+    console.error("Add comment error:", error);
+    return res.status(500).json({
+      error: true,
+      message: "Internal server error",
+      details: error.message,
+    });
+  }
+};
+
+export const deleteComments = async (req, res) => {
+  try {
+    const { comment_id, blog_id } = req.body;
+    const user_id = req.user.id; 
+
+    if (!comment_id || !blog_id) {
+      return res.status(400).json({
+        error: true,
+        message: "Missing required fields",
+      });
+    }
+    
+  
+    const commentExists = await db("comments")
+      .where({ 
+        id: comment_id, 
+        blog_id,
+        user_id
+      })
+      .first();
+
+    if (!commentExists) {
+      return res.status(404).json({
+        error: true,
+        message: "Comment not found or you don't have permission to delete it",
+      });
+    }
+
+    await db("comments").where({ id: comment_id }).del();
+    return res.status(200).json({
+      success: true,
+      message: "Comment deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete comment error:", error);
+    return res.status(500).json({
+      error: true,
+      message: "Internal server error",
+      details: error.message,
+    });
+  }
+};
+
 // Get Single Post
 export const getPost = async (req, res) => {
   try {
@@ -254,10 +342,14 @@ export const getPost = async (req, res) => {
             "comments.id",
             "comments.user_id",
             "comments.content",
-            "comments.created_at",
-            "users.username",
+            "comments.blog_id",
+            db.raw(
+              "comments.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata' AS created_at"
+            ),
+            "users.name",
             "users.avatar"
-          ),
+          )
+          .orderBy("comments.created_at", "desc"),
 
         // Get bookmark count
         db("bookmarks").where("blog_id", blog.id).count("* as count").first(),
@@ -287,137 +379,6 @@ export const getPost = async (req, res) => {
   }
 };
 
-// const getMultiplePosts=async(req,res)=>{
-//   try {
-//     const { username } = req?.params || null;
-//     const { page = 1, limit = 5, user_id } = req.query;
-//     const offset = (page - 1) * limit;
-//     const parsedLimit = parseInt(limit);
-//     const parsedOffset = parseInt(offset);
-//     const parsedPage = parseInt(page);
-
-//     // Get total count first (for pagination)
-//     const totalItems = await db("blog")
-//       .where({ is_public: true })
-//       .count("id as total")
-//       .first();
-
-//     if (parseInt(totalItems.total) === 0) {
-//       return res.status(200).json({
-//         blogs: [],
-//         pagination: {
-//           totalItems: 0,
-//           totalPages: 0,
-//           currentPage: parsedPage,
-//         },
-//       });
-//     }
-
-//     // Fetch blogs with author information
-//     const blogs = await db("blog")
-//       .leftJoin("users", "blog.user_id", "users.id")
-//       .select(
-//         "blog.*",
-//         "users.username",
-//         "users.name",
-//         "users.avatar"
-//       )
-//       .where({ is_public: true })
-//       .orderBy("blog.created_at", "desc")
-//       .limit(parsedLimit)
-//       .offset(parsedOffset);
-
-//     const blogIds = blogs.map(blog => blog.id);
-
-//     // Fetch all counts and user interactions in parallel
-//     const [
-//       likeCounts,
-//       commentCounts,
-//       bookmarkCounts,
-//       userLikes,
-//       userBookmarks
-//     ] = await Promise.all([
-//       // Get like counts for all blogs
-//       db("likes")
-//         .whereIn("blog_id", blogIds)
-//         .select("blog_id")
-//         .count("id as count")
-//         .groupBy("blog_id"),
-
-//       // Get comment counts for all blogs
-//       db("comments")
-//         .whereIn("blog_id", blogIds)
-//         .select("blog_id")
-//         .count("id as count")
-//         .groupBy("blog_id"),
-
-//       // Get bookmark counts for all blogs
-//       db("bookmarks")
-//         .whereIn("blog_id", blogIds)
-//         .select("blog_id")
-//         .count("* as count")
-//         .groupBy("blog_id"),
-
-//       // Get user likes if user_id provided
-//       user_id ? db("likes")
-//         .whereIn("blog_id", blogIds)
-//         .where("user_id", user_id)
-//         .select("blog_id") : [],
-
-//       // Get user bookmarks if user_id provided
-//       user_id ? db("bookmarks")
-//         .whereIn("blog_id", blogIds)
-//         .where("user_id", user_id)
-//         .select("blog_id") : []
-//     ]);
-
-//     // Convert to lookup maps for quick access
-//     const likeCountMap = likeCounts.reduce((map, item) => {
-//       map[item.blog_id] = parseInt(item.count);
-//       return map;
-//     }, {});
-
-//     const commentCountMap = commentCounts.reduce((map, item) => {
-//       map[item.blog_id] = parseInt(item.count);
-//       return map;
-//     }, {});
-
-//     const bookmarkCountMap = bookmarkCounts.reduce((map, item) => {
-//       map[item.blog_id] = parseInt(item.count);
-//       return map;
-//     }, {});
-
-//     const userLikedSet = new Set(userLikes.map(like => like.blog_id));
-//     const userBookmarkedSet = new Set(userBookmarks.map(bookmark => bookmark.blog_id));
-
-//     // Transform blogs with counts and user interactions
-//     const transformedBlogs = blogs.map(blog => ({
-//       ...blog,
-//       likeCount: likeCountMap[blog.id] || 0,
-//       commentCount: commentCountMap[blog.id] || 0,
-//       savedCount: bookmarkCountMap[blog.id] || 0,
-//       userLiked: userLikedSet.has(blog.id),
-//       userSaved: userBookmarkedSet.has(blog.id)
-//     }));
-
-//     // Calculate pagination
-//     const totalPages = Math.ceil(parseInt(totalItems.total) / parsedLimit);
-
-//     res.status(200).json({
-//       blogs: transformedBlogs,
-//       pagination: {
-//         totalItems: parseInt(totalItems.total),
-//         totalPages,
-//         currentPage: parsedPage,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Blog fetch error: ", error);
-//     res.status(500).json({ message: "Internal server error", error: error.message });
-//   }
-// }
-
-// Get Public Posts
 // Get Public Posts
 export const getPublicPosts = async (req, res) => {
   try {
