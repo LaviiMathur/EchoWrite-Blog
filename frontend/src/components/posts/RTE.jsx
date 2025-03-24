@@ -21,7 +21,7 @@ function RTE({ value = "", onChange }) {
           "anchor",
           "searchreplace",
           "visualblocks",
-          "code",
+          "codesample",
           "fullscreen",
           "insertdatetime",
           "table",
@@ -29,7 +29,7 @@ function RTE({ value = "", onChange }) {
           "wordcount",
         ],
         toolbar:
-          "undo redo |  fontsizeinput  blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | image | removeformat | help",
+          "undo redo  |  fontsizeinput  blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | image | removeformat | help",
         fontsize_formats: "8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt",
 
         content_style: `

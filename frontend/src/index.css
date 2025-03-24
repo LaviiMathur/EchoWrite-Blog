@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@fontsource/montserrat";
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap");
 
 @font-face {
   font-family: "Mistrully";
@@ -64,7 +65,7 @@
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #fae88e #F0F0FA;
+  scrollbar-color: #fae88e #f0f0fa;
 }
 
 table {
@@ -84,4 +85,19 @@ th {
 }
 pre {
   font-family: "Courier New", monospace;
+}
+code {
+  display: block;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", monospace;
+  font-size: 0.9rem;
+  background: #373737;
+  color: #ffffff;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #313244;
+  line-height: 1.5;
+  overflow-x: auto;
+  tab-size: 2;
 }
