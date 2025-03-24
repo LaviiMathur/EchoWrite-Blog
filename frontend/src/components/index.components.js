@@ -26,6 +26,9 @@ import PostActions from "./posts/PostActions";
 
 import About from "./about/About";
 
+import ProfileForm from "./profile/ProfileForm";
+import Profile from "./profile/Profile";
+
 export {
   Input,
   Button,
@@ -50,4 +53,6 @@ export {
   PostActions,
   About,
   Select,
+  ProfileForm,
+  Profile,
 };

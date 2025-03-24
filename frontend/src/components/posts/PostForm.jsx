@@ -86,7 +86,7 @@ function PostForm({ post: existingPost }) {
       };
       if (existingPost) {
         // Send PUT request to update post
-        await axios.put(`${API_URL}/posts/${existingPost.slug}`, formData, {
+        await axios.patch(`${API_URL}/posts/${existingPost.slug}`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -175,7 +175,8 @@ export const verifyOtp = async (req, res) => {
         following_count: 0,
         followers_count: 0,
         avatar:
-          "https://res.cloudinary.com/dpfmmqggy/image/upload/v1740409752/Profile.png",
+        "https://cloud.appwrite.io/v1/storage/buckets/67c5d88a001fafdc813d/files/67c72085000fee052488/view?project=67c5d4a400153ab3eeef&mode=admin"
+
       })
       .returning(["id", "name", "username", "avatar"]);
 

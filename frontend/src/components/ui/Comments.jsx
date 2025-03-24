@@ -10,6 +10,8 @@ function Comments({ comments, blog_id }) {
   const [loading, setLoading] = useState(false);
   const { status, userData } = useSelector((state) => state.auth);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [commentList, setCommentList] = useState([...(comments || "")]);
+  const [selectedComment, setSelectedComment] = useState();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ function Comments({ comments, blog_id }) {
         }
       );
 
-      window.location.reload();
+      setCommentList([response.data.comment, ...commentList]);
       toastPresets.success("Comment added!");
       setNewComment("");
     } catch (error) {
@@ -57,8 +59,9 @@ function Comments({ comments, blog_id }) {
           },
         }
       );
-      window.location.reload();
+      setCommentList(commentList.filter((c) => c.id !== commentId));
       toastPresets.success("Comment deleted!");
+      setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to delete comment:", error);
       toastPresets.error("Failed to delete comment");
@@ -67,7 +70,9 @@ function Comments({ comments, blog_id }) {
     }
   };
 
-  const handleModalClose = () => {};
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
 
   // Function to format date
   const formatDate = (dateString) => {
@@ -84,19 +89,21 @@ function Comments({ comments, blog_id }) {
       : date.toLocaleDateString();
   };
 
-  if (loading) {
-    return <Loading />;
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow-md p-6 mt-8 w-full">
+  return loading ? (
+    <Loading />
+  ) : (
+    <div className="bg-white rounded-lg shadow-md p-6 mt-8 w-full" id="comments">
       <h2 className="text-2xl font-bold mb-6">
-        Comments ({comments?.length || 0})
+        Comments ({commentList?.length || 0})
       </h2>
-
       {status && (
         <div className="mb-8 border-b pb-6">
-          <form onSubmit={handleSubmit} className="flex flex-col">
+          <form
+            onSubmit={(e) => {
+              handleSubmit(e);
+            }}
+            className="flex flex-col"
+          >
             <div className="flex items-start mb-3">
               {userData.user.avatar && (
                 <img
@@ -125,11 +132,10 @@ function Comments({ comments, blog_id }) {
           </form>
         </div>
       )}
-
       {/* Comments list */}
-      {comments?.length > 0 ? (
+      {commentList?.length > 0 ? (
         <div className="space-y-6">
-          {comments.map((comment) => (
+          {commentList.map((comment) => (
             <div key={comment.id} className="border-b pb-4 last:border-b-0">
               <div className="flex items-start">
                 <img
@@ -146,10 +152,10 @@ function Comments({ comments, blog_id }) {
                     </p>
                   </div>
                   <p className="text-gray-500">{comment.content}</p>
-                  {comment.user_id === userData.user.id && (
+                  {comment?.user_id === userData?.user.id && (
                     <button
                       onClick={() => {
-                        // Open modal when delete button is clicked
+                        setSelectedComment(comment.id);
                         setIsModalOpen(true);
                       }}
                       className="text-[#8573E6] mt-2 flex items-center hover:text-[#6855E0] transition-colors"
@@ -163,14 +169,6 @@ function Comments({ comments, blog_id }) {
               </div>
 
               {/* Confirmation Modal */}
-              {isModalOpen && (
-                <ConfirmationModal
-                  isOpen={isModalOpen}
-                  onClose={handleModalClose}
-                  onConfirm={() => handleDelete(comment.id, blog_id)}
-                  message="Do you really want to delete this comment?"
-                />
-              )}
             </div>
           ))}
         </div>
@@ -178,6 +176,14 @@ function Comments({ comments, blog_id }) {
         <p className="text-gray-500">
           No comments yet. Be the first to comment!
         </p>
+      )}{" "}
+      {isModalOpen && (
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onConfirm={() => handleDelete(selectedComment, blog_id)}
+          message="Do you really want to delete this comment?"
+        />
       )}
     </div>
   );

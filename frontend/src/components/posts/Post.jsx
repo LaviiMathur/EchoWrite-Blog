@@ -140,7 +140,7 @@ function Post() {
             </div>
           </div>
           {/* Post Content */}
-          <div className="text-gray-800 px-8">{parse(post.content || "")}</div>
+          <div className="text-gray-800 px-8 pb-8">{parse(post.content || "")}</div>
         </div>
 
         {/* Comments Section */}

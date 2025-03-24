@@ -17,7 +17,7 @@ const postRoute = express.Router();
 // createpost Route
 postRoute.post("/create-post", authMiddleware, createPost);
 //updatepost Route
-postRoute.put("/:slug", authMiddleware, updatePost);
+postRoute.patch("/:slug", authMiddleware, updatePost);
 //deletepost Route
 postRoute.delete("/delete-post", authMiddleware, deletePost);
 //getposts public Route
@@ -30,7 +30,7 @@ postRoute.post("/like", toggleLike);
 postRoute.post("/toggleBookmark", authMiddleware, toggleBookmark);
 //add comments
 postRoute.post("/add-comment", authMiddleware, addComments);
-//add comments
+//delete comments
 postRoute.delete("/delete-comment", authMiddleware, deleteComments);
 
 export default postRoute;

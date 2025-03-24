@@ -1,22 +1,12 @@
 import db from "../conf/database.js";
 import slugify from "slugify";
-
-const generateSlug = async (title) => {
-  let slug = slugify(title, { lower: true, strict: true });
-
-  const baseSlug = slug;
-
-  const count = await db("blog")
-    .where("slug", "like", `${baseSlug}%`)
-    .count("id as count")
-    .first();
-
-  if (count.count > 0) {
-    slug = `${baseSlug}-${count.count + 1}`;
-  }
-
-  return slug;
-};
+import {
+  generateSlug,
+  getBookmarkCounts,
+  getCommentCounts,
+  getLikeCounts,
+  toggleUserAction,
+} from "./helperFuntions.js";
 
 // Create Post
 export const createPost = async (req, res) => {
@@ -112,64 +102,6 @@ export const deletePost = async (req, res) => {
   }
 };
 
-// Helper functions for counts
-const getCounts = async (tableName, blogIds) => {
-  if (!blogIds || !blogIds.length) return {};
-
-  const countField =
-    tableName === "likes" || tableName === "comments" ? "id" : "*";
-
-  const counts = await db(tableName)
-    .whereIn("blog_id", blogIds)
-    .select("blog_id")
-    .count(`${countField} as count`)
-    .groupBy("blog_id");
-
-  return counts.reduce((acc, item) => {
-    acc[item.blog_id] = parseInt(item.count);
-    return acc;
-  }, {});
-};
-
-// Consolidated count functions
-const getLikeCounts = (blogIds) => getCounts("likes", blogIds);
-const getCommentCounts = (blogIds) => getCounts("comments", blogIds);
-const getBookmarkCounts = (blogIds) => getCounts("bookmarks", blogIds);
-
-// Toggle functions
-const toggleUserAction = async (tableName, blog_id, user_id) => {
-  // Check if record exists
-  const existing = await db(tableName).where({ blog_id, user_id }).first();
-
-  let isActive, actionId;
-  if (existing) {
-    // If exists, delete it
-    await db(tableName).where({ blog_id, user_id }).delete();
-    isActive = false;
-  } else {
-    // If doesn't exist, insert it
-    const result = await db(tableName)
-      .insert({ blog_id, user_id })
-      .returning("id");
-    actionId = result[0];
-    isActive = true;
-  }
-
-  // Get updated count
-  const countField =
-    tableName === "likes" || tableName === "comments" ? "id" : "*";
-  const countResult = await db(tableName)
-    .where({ blog_id })
-    .count(`${countField} as count`)
-    .first();
-
-  return {
-    isActive,
-    actionId,
-    count: parseInt(countResult.count),
-  };
-};
-
 // Toggle Like
 export const toggleLike = async (req, res) => {
   try {
@@ -255,10 +187,25 @@ export const addComments = async (req, res) => {
       .insert({ content, blog_id, user_id })
       .returning("*");
 
+    const responseComment = await db("comments")
+      .join("users", "comments.user_id", "users.id")
+      .select(
+        "comments.id",
+        "comments.user_id",
+        "comments.content",
+        "comments.blog_id",
+        // Fix the timezone conversion
+        db.raw("comments.created_at AT TIME ZONE 'Asia/Kolkata' AS created_at"),
+        "users.name",
+        "users.avatar"
+      )
+      .where("comments.id", newComment.id)
+      .first();
+
     return res.status(201).json({
       success: true,
       message: "Comment added successfully",
-      comment: newComment,
+      comment: responseComment,
     });
   } catch (error) {
     console.error("Add comment error:", error);
@@ -269,11 +216,11 @@ export const addComments = async (req, res) => {
     });
   }
 };
-
+//delete Comments
 export const deleteComments = async (req, res) => {
   try {
     const { comment_id, blog_id } = req.body;
-    const user_id = req.user.id; 
+    const user_id = req.user.id;
 
     if (!comment_id || !blog_id) {
       return res.status(400).json({
@@ -281,15 +228,12 @@ export const deleteComments = async (req, res) => {
         message: "Missing required fields",
       });
     }
-    
-  
-    const commentExists = await db("comments")
-      .where({ 
-        id: comment_id, 
-        blog_id,
-        user_id
-      })
-      .first();
+
+    const commentExists = await db("comments").where({
+      id: comment_id,
+      blog_id,
+      user_id,
+    });
 
     if (!commentExists) {
       return res.status(404).json({
@@ -343,8 +287,9 @@ export const getPost = async (req, res) => {
             "comments.user_id",
             "comments.content",
             "comments.blog_id",
+            // Fix the timezone conversion here too
             db.raw(
-              "comments.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata' AS created_at"
+              "comments.created_at AT TIME ZONE 'Asia/Kolkata' AS created_at"
             ),
             "users.name",
             "users.avatar"
@@ -472,141 +417,5 @@ export const getPublicPosts = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal server error", error: error.message });
-  }
-};
-
-// Get Bookmarked Posts
-export const getBookmarkedPost = async (req, res) => {
-  try {
-    const { username } = req.params;
-    const { page = 1, limit = 5 } = req.query;
-    const offset = (page - 1) * limit;
-
-    // Find user_id from username
-    const user = await db("users").select("id").where({ username }).first();
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    // Get total bookmarked posts
-    const totalItems = await db("bookmarks")
-      .where("bookmarks.user_id", user.id)
-      .count("blog_id as total")
-      .first();
-
-    if (!totalItems.total) {
-      return res.status(200).json({
-        blogs: [],
-        pagination: {
-          totalItems: 0,
-          totalPages: 0,
-          currentPage: parseInt(page),
-        },
-      });
-    }
-
-    // Fetch bookmarked blogs
-    const blogs = await db("blog")
-      .join("bookmarks", "blog.id", "=", "bookmarks.blog_id")
-      .join("users", "blog.user_id", "=", "users.id")
-      .select("blog.*", "users.username", "users.name", "users.avatar")
-      .where("bookmarks.user_id", user.id)
-      .orderBy("blog.created_at", "desc")
-      .limit(parseInt(limit))
-      .offset(parseInt(offset));
-
-    const blogIds = blogs.map((blog) => blog.id);
-    if (!blogIds.length) {
-      return res.status(200).json({
-        blogs: [],
-        pagination: {
-          totalItems: 0,
-          totalPages: 0,
-          currentPage: parseInt(page),
-        },
-      });
-    }
-
-    // Fetch counts
-    const [likeCounts, commentCounts, bookmarkCounts] = await Promise.all([
-      getLikeCounts(blogIds),
-      getCommentCounts(blogIds),
-      getBookmarkCounts(blogIds),
-    ]);
-
-    // Transform response
-    const transformedBlogs = blogs.map((blog) => ({
-      ...blog,
-      likeCount: likeCounts[blog.id] || 0,
-      commentCount: commentCounts[blog.id] || 0,
-      savedCount: bookmarkCounts[blog.id] || 0,
-      userLiked: true, // Since it's bookmarked, assume user liked it
-      userSaved: true,
-    }));
-
-    res.status(200).json({
-      blogs: transformedBlogs,
-      pagination: {
-        totalItems: parseInt(totalItems.total),
-        totalPages: Math.ceil(totalItems.total / parseInt(limit)),
-        currentPage: parseInt(page),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching bookmarked posts:", error);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
-  }
-};
-// User Profile
-export const userProfile = async (req, res) => {
-  try {
-    const { username } = req.params;
-    const { limit = 10, offset = 0 } = req.query;
-
-    // Fetch user details
-    const user = await db("users")
-      .select(
-        "id",
-        "name",
-        "email",
-        "username",
-        "bio",
-        "avatar",
-        "followers_count",
-        "following_count"
-      )
-      .where({ username })
-      .first();
-
-    if (!user) {
-      console.error(`User not found for username: ${username}`);
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Fetch the total number of blog posts
-    const blogCount = await db("blog")
-      .where({ user_id: user.id })
-      .count("id as total")
-      .first();
-
-    // Fetch user posts with pagination
-    const blogs = await db("blog")
-      .select("blog.*", "users.username", "users.name", "users.avatar")
-      .leftJoin("users", "blog.user_id", "users.id") // Join users table
-      .where({ "blog.user_id": user.id })
-      .orderBy("blog.created_at", "desc")
-      .limit(parseInt(limit, 10))
-      .offset(parseInt(offset, 10));
-
-    res.status(200).json({
-      ...user,
-      totalBlogs: blogCount?.total || 0,
-      blogs,
-    });
-  } catch (error) {
-    console.error("Profile fetch error:", error);
-    res
-      .status(500)
-      .json({ message: "Internal server error", details: error.message });
   }
 };
