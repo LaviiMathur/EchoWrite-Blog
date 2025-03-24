@@ -1,5 +1,5 @@
 import db from "../conf/database.js";
-import slugify from "slugify";
+
 import {
   generateSlug,
   getBookmarkCounts,

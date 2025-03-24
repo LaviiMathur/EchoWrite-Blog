@@ -1,5 +1,5 @@
 import db from "../conf/database.js";
-
+import slugify from "slugify";
 // slug
 const generateSlug = async (title) => {
   let slug = slugify(title, { lower: true, strict: true });
