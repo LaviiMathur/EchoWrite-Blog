@@ -1,0 +1,103 @@
+@import "tailwindcss";
+@import "@fontsource/montserrat";
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap");
+
+@font-face {
+  font-family: "Mistrully";
+  src: url("/Mistrully.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.montserrat {
+  font-family: "Montserrat", sans-serif;
+}
+
+.mistrully {
+  font-family: "Mistrully", cursive;
+}
+.post ul {
+  padding-left: 20px !important;
+  list-style-type: disc !important; /* Default bullet points */
+}
+
+.post ol {
+  padding-left: 20px !important;
+  list-style-type: decimal !important; /* Default numbered list */
+}
+
+.post li {
+  margin-left: 10px !important;
+  padding: 5px 0 !important;
+  display: list-item !important;
+}
+
+/* Allow inline styles from TinyMCE */
+.post ul[style*="list-style-type: circle"] {
+  list-style-type: circle !important;
+}
+
+.post ul[style*="list-style-type: square"] {
+  list-style-type: square !important;
+}
+
+.post ul[style*="list-style-type: none"],
+.post ol[style*="list-style-type: none"] {
+  list-style-type: none !important;
+}
+
+/* Ordered list styles */
+.post ol[style*="list-style-type: upper-alpha"] {
+  list-style-type: upper-alpha !important; /* A, B, C... */
+}
+
+.post ol[style*="list-style-type: lower-alpha"] {
+  list-style-type: lower-alpha !important; /* a, b, c... */
+}
+
+.post ol[style*="list-style-type: upper-roman"] {
+  list-style-type: upper-roman !important; /* I, II, III... */
+}
+
+.post ol[style*="list-style-type: lower-roman"] {
+  list-style-type: lower-roman !important; /* i, ii, iii... */
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #fae88e #f0f0fa;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+th {
+  background-color: #f2f2f2;
+  text-align: left;
+}
+pre {
+  font-family: "Courier New", monospace;
+}
+code {
+  display: block;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", monospace;
+  font-size: 0.9rem;
+  background: #373737;
+  color: #ffffff;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #313244;
+  line-height: 1.5;
+  overflow-x: auto;
+  tab-size: 2;
+}
